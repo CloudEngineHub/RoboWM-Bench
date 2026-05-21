@@ -9,10 +9,10 @@
     <a href="https://arxiv.org/abs/2604.19092">
       <img alt="arXiv" src="https://img.shields.io/badge/arXiv-2604.19092-b31b1b?logo=arxiv&logoColor=white" />
     </a>
-    <a href="https://github.com/fffstrong/RoboWM-Bench">
+    <a href="https://huggingface.co/RoboWM/RoboWM-IDM-real">
       <img alt="Code" src="https://img.shields.io/badge/Code-GitHub-111827?logo=github&logoColor=white" />
     </a>
-    <a href="https://huggingface.co/fffstrong/robowmbench-idm">
+    <a href="https://huggingface.co/RoboWM/RoboWM-IDM-real">
       <img alt="IDM Weights" src="https://img.shields.io/badge/IDM%20Weights-Hugging%20Face-f59e0b?logo=huggingface&logoColor=white" />
     </a>
   </p>
@@ -118,7 +118,7 @@ Please refer to NVIDIA DreamGen (GR00T-dreams) for the IDM section: `https://git
 
 - Replace `data_config_idm.py` with `IDM/data_config_idm.py`.
 - `IDM/discard_trash` is a reference input dataset. Make sure your dataset `meta` matches the reference, especially **`modality`** and **`stats`**.
-- IDM weights (open-sourced): `https://huggingface.co/fffstrong/robowmbench-idm`.
+- IDM weights (open-sourced): `https://huggingface.co/RoboWM/RoboWM-IDM-real`.
 
 IDM inference command:
 
