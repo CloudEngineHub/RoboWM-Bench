@@ -220,9 +220,6 @@ python scripts/human/dataset_replay_npz_bi.py \
     --device cpu
 ```
 
-## Roadmap
-
-- Open-source the pure-simulation tasks + evaluation code, and release the corresponding IDM weights (target: mid-May).
 
 ## Citation
 
