@@ -114,6 +114,8 @@ python scripts/eval/replay_franka.py \
 
 ## IDM
 
+After obtaining the world model outputs, please run the tools/resize.py to process the video resolution to 640×480, and then use IDM to process these videos.
+
 Please refer to NVIDIA DreamGen (GR00T-dreams) for the IDM section: `https://github.com/nvidia/GR00T-dreams`.
 
 - Replace `data_config_idm.py` with `IDM/data_config_idm.py`.
