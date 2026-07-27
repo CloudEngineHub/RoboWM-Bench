@@ -66,6 +66,8 @@ pip install --upgrade pip
 pip install "isaacsim[all,extscache]==5.1.0" --extra-index-url https://pypi.nvidia.com
 
 # Install IsaacLab (pinned for IsaacSim 5.1)
+# Use the bundled IsaacLab_5_1 source included in this repository for this environment; do not replace it with a separate IsaacLab installation, as RoboWM-Bench may rely on
+# interfaces from this bundled copy.
 sudo apt install cmake build-essential
 cd IsaacLab_5_1
 git checkout v2.3.0
