@@ -1,6 +1,7 @@
 from __future__ import annotations
 import torch
 from dataclasses import MISSING
+from pathlib import Path
 from typing import Any, Dict, List
 
 import torch
@@ -17,32 +18,40 @@ import random
 
 from .idm_cfg import IDMEnvCfg
 from lehome.utils.success_checker import success_checker_bowlinplate
-from source.lehome.lehome.assets.scenes.byobu_table import KITCHEN_NOTABLE_USD_PATH
 from lehome.devices.action_process import preprocess_device_action
 # from lehome.assets.object.Garment import GarmentObject
 from lehome.assets.object.fluid import BowlObject
 from omegaconf import OmegaConf
 import numpy as np
-import os
 
 import numpy as np
 import omni.usd
 from isaaclab.sensors import TiledCameraCfg
 
+
+_SCENE_USD_PATH = (
+    Path(__file__).resolve().parents[5]
+    / "Assets"
+    / "benchmark"
+    / "scenes"
+    / "benchmark_scene1.usd"
+)
+
+
 def assign_id():
-    if random.random() < 0.4:  # 40% 的概率
+    if random.random() < 0.4:  # 40% probability
         return 0
-    else:  # 60% 的概率均匀分布在 1-20
+    else:  # 60% probability, uniformly distributed from 1 to 20
         return random.randint(1, 20)
 
 def rotation_matrix(axis, angle):
     """
-    生成绕指定轴旋转的旋转矩阵
-    :param axis: 旋转轴 ('x', 'y', 'z')
-    :param angle: 旋转角度（度）
-    :return: 旋转矩阵 (3x3)
+    Generate a rotation matrix around the selected axis.
+    :param axis: Rotation axis ('x', 'y', 'z')
+    :param angle: Rotation angle in degrees
+    :return: Rotation matrix (3x3)
     """
-    angle = np.radians(angle)  # 将角度转换为弧度
+    angle = np.radians(angle)  # Convert degrees to radians
     c, s = np.cos(angle), np.sin(angle)
     if axis == 'x':
         return np.array([[1, 0, 0],
@@ -61,7 +70,7 @@ def rotation_matrix(axis, angle):
 
 def quaternion_to_rotation_matrix(q):
     """
-    将四元数 (w, x, y, z) 转换为旋转矩阵
+    Convert quaternion (w, x, y, z) to a rotation matrix.
     """
     w, x, y, z = q
     return np.array([
@@ -72,7 +81,7 @@ def quaternion_to_rotation_matrix(q):
 
 def rotation_matrix_to_quaternion(R):
     """
-    将旋转矩阵转换为四元数 (w, x, y, z) 格式
+    Convert a rotation matrix to quaternion (w, x, y, z).
     """
     trace = np.trace(R)
     if trace > 0:
@@ -101,7 +110,7 @@ def rotation_matrix_to_quaternion(R):
 
 def random_rotation_matrix(max_angle_deg):
     """
-    生成一个随机旋转矩阵，旋转角度在 [0, max_angle_deg] 范围内
+    Generate a random rotation matrix with per-axis limits in degrees.
     """
     angle_x = random.uniform(-max_angle_deg, max_angle_deg)
     angle_y = random.uniform(-max_angle_deg, max_angle_deg)
@@ -111,7 +120,7 @@ def random_rotation_matrix(max_angle_deg):
     R_y = rotation_matrix('y', angle_y)
     R_z = rotation_matrix('z', angle_z)
 
-    # 旋转顺序：Z -> Y -> X
+    # Rotation order: Z -> Y -> X
     return R_z @ R_y @ R_x
 
 
@@ -124,8 +133,7 @@ class IDMEnv(DirectRLEnv):
         self.joint_pos = self.robot.data.joint_pos
 
     def _setup_scene(self):
-        # cfg = sim_utils.UsdFileCfg(usd_path=f"{KITCHEN_NOTABLE_USD_PATH}")
-        cfg = sim_utils.UsdFileCfg(usd_path="/home/feng/lehome_1/Assets/scenes/kitchen_with_orange/scene_notable.usd")
+        cfg = sim_utils.UsdFileCfg(usd_path=str(_SCENE_USD_PATH))
 
         cfg.func(
             "/World/Scene",
@@ -230,33 +238,33 @@ class IDMEnv(DirectRLEnv):
         base_rot = (-0.50096300, 0.82463646, 0.23517914, -0.11705365)
         base_rot_matrix = quaternion_to_rotation_matrix(base_rot)
 
-        # 60% 概率直接使用 base_pos 和 base_rot
+        # Use the base pose when the random threshold is met.
         if random.random() < 65:
             new_pos = base_pos
             new_rot_quaternion = base_rot
         else:
-            # 随机平移
+            # Random translation
             random_translation = np.array([
-                random.uniform(-0.03, 0.03),  # x 方向随机移动 0-5cm
-                random.uniform(-0.03, 0.03),  # y 方向随机移动 0-5cm
-                random.uniform(-0.03, 0.03),  # z 方向随机移动 0-5cm
+                random.uniform(-0.03, 0.03),  # x-axis random offset
+                random.uniform(-0.03, 0.03),  # y-axis random offset
+                random.uniform(-0.03, 0.03),  # z-axis random offset
             ])
             new_pos = base_pos + random_translation
 
-            # 随机旋转
-            random_rotation = random_rotation_matrix(5)  # 随机旋转 0-10 度
+            # Random rotation
+            random_rotation = random_rotation_matrix(5)
             new_rot_matrix = random_rotation @ base_rot_matrix
             new_rot_quaternion = rotation_matrix_to_quaternion(new_rot_matrix)
 
-        # 将位置和方向转换为 torch.Tensor
+        # Convert position and orientation to torch.Tensor
         positions = torch.tensor([new_pos], dtype=torch.float32)  # (1, 3)
         orientations = torch.tensor([new_rot_quaternion], dtype=torch.float32)  # (1, 4)
 
-        # 设置摄像头的位姿
+        # Set the camera pose
         self.top_camera_0.set_world_poses(
             positions=positions,
             orientations=orientations,  # wxyz
-            env_ids=None,  # 对所有摄像头生效
+            env_ids=None,  # Apply to all cameras
         )
 
         if env_ids is None:
@@ -289,16 +297,16 @@ class IDMEnv(DirectRLEnv):
         return preprocess_device_action(action, teleop_device)
 
     def initialize_obs(self):
-        # 记录当前仿真中的 root_state（已包含 _reset_idx 随机平移/选物体），而不是 cfg 默认值
+        # Record the current simulated root state, including _reset_idx randomization.
         robot_state = self.robot.data.root_state_w.clone()
         self.robot_reset_state = np.array(
             robot_state.cpu().detach(), dtype=np.float32
         )
 
     def get_all_pose(self):
-        # rigidapple 暂不参与 pose 记录
+        # rigidapple is not included in pose recording for now.
         return {
-            # 直接读取当前仿真状态，确保与 _reset_idx 的随机结果一致
+            # Read the current simulated state so it matches _reset_idx randomization.
             "robot": self.robot.data.root_state_w.clone().cpu().numpy(),
         }
 
@@ -339,21 +347,20 @@ class IDMEnv(DirectRLEnv):
         return gripper_poses
     
     def get_rigid_body_dimensions(self):
-        """从 USD 静态几何中读取 drawer 各 body 的局部包围盒，仅调用一次"""
+        """Read a local bounding box from static USD geometry once."""
         stage = omni.usd.get_context().get_stage()
         
-        # 构造 prim 路径，假设 link prim 在 /World/Object/drawer 下
-        # 注意：实际路径可能不同，需根据你的 USD 结构调整
+        # Build the prim path. Adjust it if the USD structure changes.
         prim_path = f"/World/Object/banana"
         prim = stage.GetPrimAtPath(prim_path)
         if not prim:
             print(f"[Warn] Prim not found for body at {prim_path}")
-            # 使用默认小包围盒避免崩溃
+            # Use a small default bounding box to avoid crashing.
             local_min = (-0.01, -0.01, -0.01)
             local_max = (0.01, 0.01, 0.01)
         else:
             bbox_cache = UsdGeom.BBoxCache(
-                Usd.TimeCode.Default(),  # 静态模型用 Default
+                Usd.TimeCode.Default(),  # Use Default for static models
                 [UsdGeom.Tokens.default_, UsdGeom.Tokens.proxy],
                 useExtentsHint=True,
                 ignoreVisibility=True
@@ -370,10 +377,10 @@ class IDMEnv(DirectRLEnv):
                 local_min = (min_vec[0], min_vec[1], min_vec[2])
                 local_max = (max_vec[0], max_vec[1], max_vec[2])
             
-        # 计算尺寸
-        width = local_max[0] - local_min[0]  # X 方向
-        height = local_max[1] - local_min[1]  # Y 方向
-        depth = local_max[2] - local_min[2]  # Z 方向
+        # Compute dimensions
+        width = local_max[0] - local_min[0]  # X direction
+        height = local_max[1] - local_min[1]  # Y direction
+        depth = local_max[2] - local_min[2]  # Z direction
 
         print(f"x: {width}, y: {height}, z: {depth}")
         return width, height, depth
@@ -388,4 +395,3 @@ class IDMEnv(DirectRLEnv):
             success_tensor = torch.zeros_like(self.episode_length_buf, dtype=torch.bool)
         episode_success = success_tensor
         return episode_success
-
