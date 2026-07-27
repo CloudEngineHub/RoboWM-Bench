@@ -1,8 +1,8 @@
 python scripts/robot/eval_franka.py \
-  --task Franka-hard \
-  --json_root /home/jiang/lehome_1/GT/hard \
+  --task Franka-put_in_drawer \
+  --json_root ./GT/put_in_drawer \
   --enable_cameras \
-  --output_root /home/feng/lehome_1/Datasets \
+  --output_root ./Datasets \
   --device "cpu" \
   --part_scores \
   # --episode_index 9
