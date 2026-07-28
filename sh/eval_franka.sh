@@ -1,6 +1,6 @@
 python scripts/robot/eval_franka.py \
-  --task Franka-put_in_drawer \
-  --json_root ./GT/put_in_drawer \
+  --task Franka-pick \
+  --json_root ./GT/pick \
   --enable_cameras \
   --output_root ./Datasets \
   --device "cpu" \
